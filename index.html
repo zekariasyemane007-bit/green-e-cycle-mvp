@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Green E-Cycle — Live Assessment MVP</title>
+  <meta name="description" content="Green E-Cycle — mobile-first prototype: capture → assess → circularity → pathway.">
+  <style>
+  /* Simple mobile-first design, single-file */
+  :root{
+    --bg: #f6fbf7;
+    --card: #ffffff;
+    --accent: #2e8b57;
+    --accent-2: #1f7a45;
+    --muted: #6b7280;
+    --glass: rgba(46,139,87,0.06);
+    --shadow: 0 10px 30px rgba(17,24,39,0.06);
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    -webkit-font-smoothing:antialiased;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background: linear-gradient(180deg,var(--bg),#eaf7ee);
+    padding:16px;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  .app{width:100%;max-width:980px}
+
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .brand h1{margin:0;color:var(--accent);font-size:1.2rem}
+  .brand p{margin:2px 0 0 0;color:var(--muted);font-size:0.86rem}
+
+  .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+
+  /* Landing / Controls */
+  .controls{display:flex;flex-direction:column;gap:10px;padding:18px}
+  .control-row{display:flex;gap:10px;flex-wrap:wrap}
+  select, .input, .btn{
+    appearance:none;
+    border:1px solid #e6eef0;
+    border-radius:10px;
+    padding:10px;
+    font-size:0.95rem;
+    background:var(--glass);
+  }
+  .btn{cursor:pointer;font-weight:700;border:0}
+  .btn-primary{background:var(--accent);color:#fff;padding:12px 14px;border-radius:12px}
+  .btn-ghost{background:transparent;border:1px solid rgba(46,139,87,0.12);color:var(--accent);padding:10px 12px;border-radius:10px}
+  .btn-danger{background:var(--danger);color:#fff;padding:10px 12px;border-radius:10px}
+
+  .landing-cta{display:flex;flex-direction:column;gap:8px;align-items:center}
+  .big-cta{width:100%;max-width:420px}
+
+  .small{font-size:0.86rem;color:var(--muted)}
+
+  /* Camera preview */
+  .camera-preview{height:320px;border-radius:12px;background:linear-gradient(180deg,#fbfff9,#eefaf0);border:1px dashed rgba(46,139,87,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .camera-preview img{width:100%;height:100%;object-fit:cover;display:block}
+
+  /* Processing */
+  .processing{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px}
+  .stage-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .stage{padding:8px 12px;border-radius:999px;background:rgba(0,0,0,0.04);color:var(--muted);display:flex;align-items:center;gap:8px}
+  .stage.active{background:linear-gradient(90deg,rgba(46,139,87,0.12),rgba(46,139,87,0.06));color:var(--accent-2);font-weight:700}
+  .progress-ring{width:88px;height:88px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#f6fff6);box-shadow:0 8px 20px rgba(46,139,87,0.06);font-weight:800;color:var(--accent-2)}
+
+  /* Results */
+  .results{display:flex;flex-direction:column;gap:12px;padding:12px}
+  .result-top{display:flex;gap:12px;align-items:center}
+  .thumb{width:92px;height:92px;border-radius:12px;background:#fff;border:1px solid #eef6ef;overflow:hidden}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .title h2{margin:0;font-size:1.05rem}
+  .muted{color:var(--muted);font-size:0.9rem}
+
+  .score{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .score .big{font-size:1.6rem;font-weight:800;color:var(--accent-2)}
+  .score .label{font-weight:700;color:#2a6c3f}
+
+  .indicators{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:720px){.indicators{grid-template-columns:repeat(3,1fr)}}
+  .indicator{background:#fbfffb;padding:10px;border-radius:10px;border:1px solid #eef6ef}
+  .bar{height:12px;background:#e6f7ec;border-radius:999px;overflow:hidden}
+  .bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));width:0;transition:width 900ms ease}
+  .pct{margin-top:6px;font-weight:700;color:var(--accent-2)}
+
+  .components{display:grid;gap:8px}
+  @media(min-width:720px){.components{grid-template-columns:repeat(3,1fr)}}
+  .card-comp{background:#fff;padding:10px;border-radius:10px;border:1px solid #eef6ef;display:flex;gap:10px;align-items:flex-start}
+  .comp-emoji{font-size:20px;width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,#fff,#f8fff9);display:flex;align-items:center;justify-content:center}
+
+  .alert{background:#fff6f6;border-radius:10px;padding:12px;border:1px solid rgba(239,68,68,0.08);color:var(--danger);display:flex;gap:10px;align-items:flex-start}
+
+  .pathway{display:flex;flex-direction:column;gap:8px}
+  .path-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+  .path-step{background:linear-gradient(180deg,#fff,#fbfffb);border-radius:12px;padding:10px 12px;border:1px solid #eef6ef;min-width:150px;text-align:center;box-shadow:0 8px 18px rgba(17,24,39,0.03)}
+  .arrow{font-size:22px;color:var(--muted)}
+
+  .next{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
+
+  .hidden{display:none}
+
+  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:0.86rem}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <h1>Green E‑Cycle</h1>
+        <p>E‑Waste → Intelligence → Recovery → Impact</p>
+      </div>
+      <div class="small"></div>
+    </header>
+
+    <!-- Controls / Landing -->
+    <section id="panel-controls" class="card controls">
+      <div class="landing-cta">
+        <div style="text-align:center">
+          <div style="font-weight:800;font-size:1.02rem">Capture • Assess • Recover</div>
+          <div class="small" style="margin-top:6px">Use camera to capture a device, confirm the device type, and run a prototype circularity assessment.</div>
+        </div>
+      </div>
+
+      <div class="control-row" style="margin-top:6px">
+        <button id="btnScan" class="btn btn-primary big-cta">📷 Take Photo / Upload Device</button>
+        <button id="btnDemo" class="btn btn-ghost">Demo HDD</button>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center">
+        <label style="flex:1">
+          <div style="font-size:0.9rem;font-weight:700;margin-bottom:6px">Select Device</div>
+          <select id="deviceSelect" style="width:100%;padding:10px;border-radius:10px">
+            <!-- device options populated by JS -->
+          </select>
+        </label>
+
+        <label style="width:170px">
+          <div style="font-size:0.9rem;font-weight:700;margin-bottom:6px">Condition</div>
+          <select id="conditionSelect" style="width:100%;padding:10px;border-radius:10px">
+            <option value="nonfunctional">Non-functional / End-of-life</option>
+            <option value="functional">Functional / Repairable</option>
+          </select>
+        </label>
+
+        <div style="min-width:120px">
+          <button id="btnAssess" class="btn btn-primary" style="width:100%">Assess Device</button>
+        </div>
+      </div>
+
+      <div class="small" style="margin-top:8px">
+        Note: This MVP captures photos and runs a local, illustrative assessment. Automated visual identification is a planned future milestone.
+      </div>
+    </section>
+
+    <!-- Hidden file input for camera -->
+    <input id="fileInput" type="file" accept="image/*" capture="environment" class="hidden">
+
+    <!-- Camera preview card -->
+    <section id="panel-camera" class="card hidden" style="margin-top:12px">
+      <div class="camera-preview" id="cameraPreview">
+        <div id="cameraPlaceholder" style="text-align:center;color:var(--muted)">
+          <svg width="54" height="54" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M12 7a5 5 0 100 10 5 5 0 000-10z" stroke="#8ccf9a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7h3l2-3h10l2 3h3v11a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" stroke="#8ccf9a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="margin-top:8px">Tap capture to open camera or choose file</div>
+        </div>
+        <img id="previewImg" style="display:none" alt="Captured device">
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <label style="margin-right:auto">
+          <button id="btnCapture" class="btn btn-primary">📸 Capture / Upload</button>
+        </label>
+        <button id="btnCameraCancel" class="btn btn-ghost">Cancel</button>
+      </div>
+      <div class="small" style="margin-top:8px">After the photo is taken the assessment will begin automatically; you can change the selected device/condition before assessing.</div>
+    </section>
+
+    <!-- Processing panel -->
+    <section id="panel-processing" class="card hidden" style="margin-top:12px">
+      <div class="processing">
+        <div class="progress-ring" id="progressRing">0%</div>
+        <div style="font-weight:800">Analyzing device</div>
+        <div class="stage-row" id="stagesRow">
+          <div class="stage" id="s1">📷 Image captured ✓</div>
+          <div class="stage" id="s2">🔍 Identifying (user confirms)</div>
+          <div class="stage" id="s3">🛠 Assessing condition</div>
+          <div class="stage" id="s4">♻️ Evaluating circularity</div>
+          <div class="stage" id="s5">🌍 Generating recovery pathway</div>
+        </div>
+        <div class="small">Prototype assessment — device identification is confirmed by the user.</div>
+      </div>
+    </section>
+
+    <!-- Result panel -->
+    <section id="panel-result" class="card hidden" style="margin-top:12px">
+      <div class="results">
+        <div class="result-top">
+          <div class="thumb" id="thumbWrap"><img id="thumbImg" alt="Device"></div>
+          <div class="title">
+            <h2 id="resultTitle">Device</h2>
+            <div class="muted" id="resultCondition">Condition • <strong id="resultCategory">Category</strong></div>
+
+            <div class="score" style="margin-top:8px">
+              <div>
+                <div class="big" id="circularScore">78 / 100</div>
+                <div class="muted">Circularity score (illustrative)</div>
+              </div>
+              <div>
+                <div class="scoreLabel" id="scoreLabel">High Recovery Potential</div>
+                <div class="small muted" style="margin-top:8px" id="smallNote">Illustrative prototype assessment</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="indicators" style="margin-top:8px">
+          <div class="indicator">
+            <div style="font-weight:800">Reuse / Refurbishment</div>
+            <div class="bar" aria-hidden><span id="barReuse" style="width:0"></span></div>
+            <div class="pct" id="pctReuse">—</div>
+          </div>
+          <div class="indicator">
+            <div style="font-weight:800">Component Recovery</div>
+            <div class="bar" aria-hidden><span id="barComp" style="width:0"></span></div>
+            <div class="pct" id="pctComp">—</div>
+          </div>
+          <div class="indicator">
+            <div style="font-weight:800">Material Recovery</div>
+            <div class="bar" aria-hidden><span id="barMat" style="width:0"></span></div>
+            <div class="pct" id="pctMat">—</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <strong>Component recovery</strong>
+          <div class="components" id="componentsList" style="margin-top:8px"></div>
+        </div>
+
+        <div style="margin-top:10px">
+          <strong>Data security</strong>
+          <div class="alert" style="margin-top:8px">
+            <div style="font-size:20px">⚠️</div>
+            <div>
+              <div style="font-weight:800">DATA SECURITY REQUIRED</div>
+              <div class="small" style="margin-top:6px;color:var(--muted)">
+                Before reuse, resale, recycling or dismantling, verify that sensitive data has been securely erased or the storage media has been appropriately handled according to applicable procedures. This prototype does not perform secure erasure.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <strong>Recommended circular pathway</strong>
+          <div class="pathway" style="margin-top:8px">
+            <div class="path-row">
+              <div class="path-step">CAPTURE<br><small class="muted">Photo & inspect</small></div>
+              <div class="arrow">↓</div>
+              <div class="path-step">SECURE DATA<br><small class="muted">Quarantine / Erase</small></div>
+              <div class="arrow">↓</div>
+              <div class="path-step">INSPECT & HARVEST<br><small class="muted">Components</small></div>
+              <div class="arrow">↓</div>
+              <div class="path-step">MATERIAL RECOVERY<br><small class="muted">Metals & magnets</small></div>
+              <div class="arrow">↓</div>
+              <div class="path-step">RESPONSIBLE RECYCLING<br><small class="muted">Certified recycler</small></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px" class="next">
+          <div style="flex:1">
+            <strong>Recommended next step</strong>
+            <div class="small muted" id="nextAction" style="margin-top:6px">Quarantine and log the device...</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button id="btnCopy" class="btn btn-primary">COPY ASSESSMENT</button>
+            <button id="btnReset" class="btn btn-ghost">NEW SCAN</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-history" class="card hidden" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>Recent assessments</strong>
+        <button id="btnClearHistory" class="btn btn-ghost">Clear</button>
+      </div>
+      <div id="historyList" style="margin-top:8px" class="small muted"></div>
+    </section>
+
+    <footer style="margin-top:12px;text-align:center;color:var(--muted);font-size:0.86rem">
+      Current prototype: image capture and assessment workflow are functional; automated visual identification is a next AI milestone.
+    </footer>
+  </div>
+
+  <script>
+  (function(){
+    /* Basic app wiring and local assessment library */
+    const devices = {
+      hdd: {
+        name: 'Hard Disk Drive (HDD)',
+        category: 'Storage device',
+        components: [
+          {emoji:'🧲', name:'Neodymium magnets', note:'High recovery & reuse value'},
+          {emoji:'🔌', name:'PCB (control board)', note:'Precious metals, recyclable PCB streams'},
+          {emoji:'⚙️', name:'Spindle motor & actuator', note:'Parts for reuse/refurbishment'},
+          {emoji:'💿', name:'Platters', note:'Data-sensitive; secure handling required'},
+          {emoji:'🔩', name:'Aluminium / Steel / Copper', note:'Metal recovery streams'}
+        ],
+        reuse: 25, comp: 65, mat: 90,
+        reuseText: 'Low — non-functional drives are usually EOL; limited refurbishment',
+        env: 'HDDs contain recyclable metals and hazardous solder — handle responsibly',
+        safety: 'Data security critical — treat platters as sensitive'
+      },
+      laptop: {
+        name: 'Laptop',
+        category: 'Computer',
+        components: [
+          {emoji:'🔋', name:'Battery', note:'Special handling; potential recovery'},
+          {emoji:'🔌', name:'PCB / CPU', note:'Valuable chips and metals'},
+          {emoji:'💻', name:'Screen & chassis', note:'Reuse/refurbishment possible'},
+          {emoji:'🔩', name:'Aluminium / Steel', note:'Metal streams'}
+        ],
+        reuse: 50, comp: 70, mat: 70,
+        reuseText: 'Medium — many laptops can be refurbished depending on condition',
+        env: 'Batteries and displays require careful recycling',
+        safety: 'Remove batteries and handle hazardous components safely'
+      },
+      desktop: {
+        name: 'Desktop Computer',
+        category: 'Computer',
+        components: [{emoji:'🔌', name:'PSU', note:'Parts; metals'}, {emoji:'🔌', name:'Motherboard', note:'Valuable components'}, {emoji:'🔩', name:'Case (steel)', note:'Metal recovery'}],
+        reuse: 45, comp: 65, mat: 70,
+        reuseText: 'Medium',
+        env: 'Contains recoverable metals',
+        safety: 'Power supplies and capacitors require care'
+      },
+      smartphone: {
+        name: 'Smartphone',
+        category: 'Mobile',
+        components: [{emoji:'🔋', name:'Battery', note:'Special recycling'}, {emoji:'🔌', name:'PCB / SoC', note:'High value'}, {emoji:'📱', name:'Screen', note:'Repairable in some cases'}],
+        reuse: 40, comp: 75, mat: 60,
+        reuseText: 'Medium',
+        env: 'Small form factor; recycle batteries and metals',
+        safety: 'Battery safety essential'
+      },
+      tablet: {
+        name: 'Tablet',
+        category: 'Mobile',
+        components: [{emoji:'🔋', name:'Battery', note:'Recovery needed'}, {emoji:'📱', name:'Screen', note:'Repairable'}, {emoji:'🔌', name:'PCB', note:'Recoverable components'}],
+        reuse: 40, comp: 65, mat: 60,
+        reuseText: 'Medium',
+        env: 'Contains batteries and rare metals',
+        safety: 'Battery handling required'
+      },
+      monitor: {
+        name: 'Computer Monitor',
+        category: 'Display',
+        components: [{emoji:'🖥️', name:'LCD/LED Panel', note:'Limited reuse'}, {emoji:'🔌', name:'Electronics', note:'Recoverable metals'}],
+        reuse: 20, comp: 50, mat: 60,
+        reuseText: 'Low to Medium',
+        env: 'Displays can contain hazardous materials',
+        safety: 'Screens must be handled with care'
+      },
+      motherboard: {
+        name: 'Motherboard',
+        category: 'Component',
+        components: [{emoji:'🔌', name:'PCB', note:'High recoverable metals'}, {emoji:'🔩', name:'Connectors', note:'Recoverable'}],
+        reuse: 10, comp: 80, mat: 85,
+        reuseText: 'Low — boards usually harvested for parts',
+        env: 'PCBs have high recovery value but require specialist recycling',
+        safety: 'Handle with ESD and recycling guidance'
+      },
+      printer: {
+        name: 'Printer',
+        category: 'Peripheral',
+        components: [{emoji:'⚙️', name:'Motors & gears', note:'Parts'}, {emoji:'🔌', name:'PCB', note:'Recoverable'}, {emoji:'🔩', name:'Steel parts', note:'Metal recovery'}],
+        reuse: 30, comp: 55, mat: 65,
+        reuseText: 'Low to Medium',
+        env: 'Inks and cartridges need proper handling',
+        safety: 'Cartridges and electronics require care'
+      },
+      keyboard: {
+        name: 'Keyboard',
+        category: 'Peripheral',
+        components: [{emoji:'⌨️', name:'Plastic & switches', note:'Limited reuse'}, {emoji:'🔩', name:'Metal parts', note:'Recyclable'}],
+        reuse: 20, comp: 30, mat: 40,
+        reuseText: 'Low',
+        env: 'Plastic waste; separate materials if possible',
+        safety: 'Small parts'
+      },
+      mouse: {
+        name: 'Mouse',
+        category: 'Peripheral',
+        components: [{emoji:'🖱️', name:'Plastic & PCB', note:'Limited recovery'}, {emoji:'🔩', name:'Metal parts', note:'Recyclable'}],
+        reuse: 20, comp: 30, mat: 40,
+        reuseText: 'Low',
+        env: 'Small form factor; recycle responsibly',
+        safety: 'Small batteries may be present'
+      },
+      router: {
+        name: 'Router',
+        category: 'Network',...
